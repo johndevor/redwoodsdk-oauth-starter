@@ -1,0 +1,119 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+  provider        = "prisma-client-js"
+  previewFeatures = ["driverAdapters"]
+  output          = "../node_modules/.prisma/client"
+
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id            String    @id @default(uuid())
+  name          String?
+  email         String?   @unique
+  emailVerified DateTime? @map("email_verified")
+  image         String?
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @default(now()) @updatedAt
+  credentials   Credential[] // Relationship: One user can have many credentials
+  accounts      Account[]
+  sessions      Session[]
+
+  ownedOrganizations      Organization[]       @relation("OwnedOrganizations")
+  organizationMemberships OrganizationMember[]
+
+  @@map("user")
+}
+
+model Organization {
+  id        String               @id @default(uuid())
+  createdAt DateTime             @default(now())
+  updatedAt DateTime             @default(now()) @updatedAt
+  owner     User                 @relation("OwnedOrganizations", fields: [ownerId], references: [id], onDelete: Cascade)
+  ownerId   String
+  name      String
+  members   OrganizationMember[]
+
+  @@index([ownerId])
+  @@map("organization")
+}
+
+model OrganizationMember {
+  id             String       @id @default(uuid())
+  organization   Organization @relation(fields: [organizationId], references: [id], onDelete: Cascade)
+  organizationId String
+  user           User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  userId         String
+  joinedAt       DateTime     @default(now())
+
+  @@unique([organizationId, userId])
+  @@index([userId])
+  @@index([organizationId])
+  @@map("organization_member")
+}
+
+model Credential {
+  id           String   @id @default(uuid()) // Internal DB ID
+  userId       String   @unique // Each user has one discoverable credential
+  user         User     @relation(fields: [userId], references: [id])
+  createdAt    DateTime @default(now())
+  credentialId String   @unique // WebAuthn credential identifier
+  publicKey    Bytes
+  counter      Int      @default(0)
+
+  @@index([credentialId])
+  @@index([userId])
+  @@map("credential")
+}
+
+model Account {
+  id                 String  @id @default(uuid())
+  userId             String
+  type               String
+  provider           String
+  providerAccountId  String
+  refresh_token      String?
+  access_token       String?
+  expires_at         Int?
+  token_type         String?
+  scope              String?
+  id_token           String?
+  session_state      String?
+ 
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+ 
+  @@unique([provider, providerAccountId])
+  @@map("account")
+}
+ 
+model Session {
+  id           String   @id @default(uuid())
+  sessionToken String   @unique
+  userId       String
+  expires      DateTime
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("session")
+}
+
+model VerificationToken {
+  identifier String
+  token      String
+  expires    DateTime
+ 
+  @@unique([identifier, token])
+  @@map("verification_token")
+}
+
+model TestModel {
+  id Int @id @default(autoincrement())
+}
