@@ -1,17 +1,12 @@
 #  RedwoodSDK + @auth/core Starter
 
-
-
-
-
-This "standard starter" is the recommended implementation for RedwoodSDK. You get a Typescript project with:
-
 - Vite
 - database (Prisma via D1)
 - Session Management (via DurableObjects)
-- Passkey authentication (Webauthn)
 - Storage (via R2)  
 - Authentication (via @auth/core)
+- Tailwind
+- Shadcn/ui components
 
 ## Notes
 
