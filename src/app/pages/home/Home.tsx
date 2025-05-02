@@ -1,4 +1,6 @@
 import { RequestInfo } from "@redwoodjs/sdk/worker";
+import { DatePicker } from "@/app/components/ui/datepicker";
+
 
 export function Home({ ctx }: RequestInfo) {
   return (
@@ -15,6 +17,7 @@ export function Home({ ctx }: RequestInfo) {
           <a href="/auth/signin">Sign in</a>
         )}
       </p>
+      <DatePicker />
     </div>
   );
 }

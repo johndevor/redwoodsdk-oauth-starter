@@ -10,6 +10,7 @@ export const Document: React.FC<{ children: React.ReactNode }> = ({
         content="default-src 'self'; img-src 'self' https://authjs.dev data:; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline';"
       />
       <title>@redwoodjs/starter-standard</title>
+      <link rel="stylesheet" href="/src/app/styles.css" />
       <link rel="modulepreload" href="/src/client.tsx" />
     </head>
     <body>
