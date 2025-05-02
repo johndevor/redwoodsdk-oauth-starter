@@ -1,12 +1,13 @@
 #  RedwoodSDK + @auth/core Starter
 
+- Authentication (via @auth/core)
+- Tailwind
+- Shadcn/ui components
 - Vite
 - database (Prisma via D1)
 - Session Management (via DurableObjects)
 - Storage (via R2)  
-- Authentication (via @auth/core)
-- Tailwind
-- Shadcn/ui components
+
 
 ## Notes
 
