@@ -194,6 +194,7 @@ export const authMiddleware =
         const authData = (await authResponse.json()) as {
           user?: { id: string; email: string, name: string, image: string, createdAt: Date, updatedAt: Date, emailVerified: Date, ownedOrganizations: string[] };
         };
+        console.log(authData)
         const user = await getUserByEmail(authData?.user?.email);
         
         if (authData?.user) {
@@ -203,7 +204,7 @@ export const authMiddleware =
             createdAt: new Date(),
             updatedAt: new Date(),
             emailVerified: null,
-            image: null,
+            image: authData.user.image,
             name: authData.user.name,
             ownedOrganizations: []
           };
