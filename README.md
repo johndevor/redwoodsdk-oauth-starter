@@ -8,6 +8,10 @@
 - Session Management (via DurableObjects)
 - Storage (via R2)  
 
+## Screenshot
+
+![Screenshot](docs/screenshot1.png)
+
 
 ## Notes
 
