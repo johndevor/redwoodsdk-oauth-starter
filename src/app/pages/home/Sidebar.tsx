@@ -1,6 +1,8 @@
 import { Calendar, Home, Inbox, Search, Settings } from "lucide-react"
-import { Button } from "@/app/components/ui/button"
+
 import { RequestInfo } from "@redwoodjs/sdk/worker"
+
+import { SidebarUserClient } from "./SidebarUserClient"
 
 import {
   Sidebar as SidebarComponent,
@@ -42,8 +44,7 @@ const items = [
     },
   ]
 
-  export function Sidebar({ ctx }: RequestInfo) {
-    console.log('sidebar', ctx.user)
+  export function Sidebar({ ctx }: { ctx: RequestInfo['ctx'] }) {
     return (
       <SidebarComponent>
         <SidebarContent className="flex flex-col justify-between">
@@ -64,25 +65,7 @@ const items = [
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
-          <div className="max-w-md flex justify-start bg-gray-200">
-            {ctx.user ? (
-              <>
-                <div className="flex items-center p-2 pl-4 rounded">
-                  <div className="overflow-hidden rounded-full w-8 h-8 mr-2">
-                    <img src={ctx.user.image!} alt="" className="w-full h-full" />
-                  </div>
-                  <div className="flex flex-col">
-                    <span className="block">{ctx.user.name}</span>
-                    <span className="block">{ctx.user.email}</span>
-                  </div>
-                </div>
-              </>
-            ) : (
-              <Button asChild>
-                <a href="/auth/signin">Sign in</a>
-              </Button>
-            )}
-          </div>
+          <SidebarUserClient ctx={ctx} />
         </SidebarContent>
       </SidebarComponent>      
     )

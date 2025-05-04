@@ -1,13 +1,12 @@
+"use client"
 import { RequestInfo } from "@redwoodjs/sdk/worker";
 import { Sidebar } from "./Sidebar";
 import { SidebarProvider } from "@/app/components/ui/sidebar";
 
 export function Home({ ctx }: RequestInfo) {
   return (
-    
-
-  <SidebarProvider>
-    <Sidebar ctx={ctx}/>
+    <SidebarProvider>
+      <Sidebar ctx={ctx} />
       <div className="space-y-4 p-4">
         <h1 className="text-4xl">
           Welcome to your new Redwood app with @auth/core!
