@@ -1,15 +1,22 @@
-
 import { env } from "cloudflare:workers";
-import type { RouteMiddleware } from "@redwoodjs/sdk/router";
+import type { RouteMiddleware } from "rwsdk/router";
 import { PrismaAdapter } from "@auth/prisma-adapter";
 import { Auth, type AuthConfig } from "@auth/core";
 import Google from "@auth/core/providers/google";
 import GitHub from "@auth/core/providers/github";
+import { db } from "@/db";
 import { getUserByEmail } from "@/functions/user";
 import { AppContext } from "@/worker";
-import { PrismaClient } from "@prisma/client";
+import type { User } from "@prisma/client";
+import type { Workspace } from "@prisma/client";
+import { createWorkspace } from "./functions/workspace";
+import { createDefaultProject } from "./functions/project";
+import { sessions } from "./session/store";
 
-import { db } from "@/db";
+// Extended user type that includes relations
+type ExtendedUser = User & {
+  ownedWorkspaces?: Workspace[];
+};
 
 export let auth: { handleRequest: (request: Request) => Promise<Response> };
 
@@ -33,7 +40,56 @@ export const createAuthOptions = (): AuthConfig => {
     },
     events: {
       createUser: async ({ user }) => {
-        // No return value needed (void)
+        console.log("User created:", user);
+
+        // Only proceed if user.id is defined
+        if (user.id) {
+          // Check if user already has an workspace
+          let workspace = await db.workspace.findFirst({
+            where: {
+              owner: {
+                id: user.id
+              }
+            },
+          });
+          
+          if (!workspace) {
+            // Create workspace with proper relation to user's ownedWorkspaces
+            workspace = await createWorkspace({ name: "My Workspace", ownerId: user.id });
+            console.log("Workspace created:", workspace);
+            
+            const defaultProject = await createDefaultProject(user.id, workspace);
+            console.log("Default project created:", defaultProject);
+          } else {
+            // Check if user already has any nodes
+            const existingProjects = await db.project.findMany({
+              where: {
+                ownerId: user.id
+              },
+              take: 1
+            });
+            
+            // If no nodes exist, create a default one
+            if (existingProjects.length === 0) {
+              const defaultProject = await createDefaultProject(user.id, workspace);
+              console.log("Default project created:", defaultProject);
+            }
+          }
+
+          // Create a default API key for the user
+          try {
+            const defaultApiKey = await db.apiKey.create({
+              data: {
+                userId: user.id,
+                name: "Default API Key",
+                key: crypto.randomUUID(),
+              },
+            });
+            console.log("Default API key created:", defaultApiKey);
+          } catch (error) {
+            console.error("Failed to create default API key:", error);
+          }
+        }
       },
       async signOut(message) {
         if ('session' in message) {
@@ -192,12 +248,31 @@ export const authMiddleware =
 
       try {
         const authData = (await authResponse.json()) as {
-          user?: { id: string; email: string, name: string, image: string, createdAt: Date, updatedAt: Date, emailVerified: Date, ownedOrganizations: string[] };
+          user?: { id: string; email: string, name: string, image: string, createdAt: Date, updatedAt: Date, emailVerified: Date, ownedWorkspaces: string[] };
         };
-        console.log(authData)
+        // console.log(authData)
         const user = await getUserByEmail(authData?.user?.email);
         
+        // Force signout if auth system has user but database doesn't
+        if (authData?.user && !user) {
+          console.log('User exists in auth system but not in database, forcing signout');
+          // Clear the session directly and redirect to home
+          const headers = new Headers();
+          await sessions?.remove(request, headers);
+          
+          // Also clear auth cookies manually
+          headers.append('Set-Cookie', '__Secure-authjs.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; secure; httponly;');
+          headers.append('Set-Cookie', 'authjs.session-token=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/; httponly;');
+          headers.set('Location', '/');
+          
+          return new Response(null, {
+            status: 302,
+            headers,
+          });
+        }
+
         if (authData?.user) {
+          // Cast to ExtendedUser type to include ownedWorkspaces
           ctx.user = {
             id: authData.user.id,
             email: authData.user.email,
@@ -206,9 +281,8 @@ export const authMiddleware =
             emailVerified: null,
             image: authData.user.image,
             name: authData.user.name,
-            ownedOrganizations: []
-          };
-          ctx.user.ownedOrganizations = user?.ownedOrganizations;
+            ownedWorkspaces: user?.ownedWorkspaces || []
+          } as ExtendedUser;
           ctx.session = {
             userId: authData.user.id,
             createdAt: Date.now(),
